@@ -1,0 +1,20 @@
+# Alert configuration. Thresholds come from kpi_definitions.yaml by default,
+# but per-KPI overrides can be specified here. The alert engine checks each
+# KPI value against (warning_threshold, critical_threshold).
+#
+# severities: INFO | WARNING | CRITICAL
+# channels are metadata only in this reference implementation; wiring them
+# to email/Slack/webhooks is straightforward -- see kpi_system/alerts/alert_engine.py.
+
+default_channels: [dashboard]
+
+overrides:
+  oee:
+    channels: [dashboard, email]
+  cost_per_unit:
+    channels: [dashboard, email]
+  downtime_minutes:
+    channels: [dashboard]
+
+# Suppress repeated alerts within this window (minutes).
+cooldown_minutes: 60

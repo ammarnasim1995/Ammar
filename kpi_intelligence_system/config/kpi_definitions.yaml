@@ -1,0 +1,98 @@
+# Dynamic KPI definitions.
+# Add a new KPI here and the engine will compute it automatically.
+#
+# Fields:
+#   name                 : unique id used in storage and API
+#   description          : human-readable description
+#   formula              : Python expression over the aggregated columns
+#                          (planned_time_min, run_time_min, down_time_min,
+#                           ideal_cycle_time_s, units_produced, good_units,
+#                           defect_units, started_units, total_cost, revenue, ...)
+#   unit                 : ratio | currency | minutes | count
+#   higher_is_better     : true / false
+#   target               : KPI target (numeric)
+#   warning_threshold    : variance vs target that triggers WARNING alert
+#   critical_threshold   : variance vs target that triggers CRITICAL alert
+#   grain                : list of dimensions the KPI is computed at
+#                          (plant, line, machine, date, shift)
+
+kpis:
+  - name: availability
+    description: Ratio of run time to planned production time.
+    formula: run_time_min / planned_time_min
+    unit: ratio
+    higher_is_better: true
+    target: 0.90
+    warning_threshold: 0.85
+    critical_threshold: 0.80
+    grain: [plant, line, machine, date]
+
+  - name: performance
+    description: Ratio of actual output to theoretical max output given run time.
+    formula: (ideal_cycle_time_s * units_produced) / (run_time_min * 60)
+    unit: ratio
+    higher_is_better: true
+    target: 0.95
+    warning_threshold: 0.90
+    critical_threshold: 0.85
+    grain: [plant, line, machine, date]
+
+  - name: quality
+    description: Ratio of good units to total units produced.
+    formula: good_units / units_produced
+    unit: ratio
+    higher_is_better: true
+    target: 0.98
+    warning_threshold: 0.96
+    critical_threshold: 0.94
+    grain: [plant, line, machine, date]
+
+  - name: oee
+    description: Overall Equipment Effectiveness = Availability * Performance * Quality.
+    formula: (run_time_min / planned_time_min) * ((ideal_cycle_time_s * units_produced) / (run_time_min * 60)) * (good_units / units_produced)
+    unit: ratio
+    higher_is_better: true
+    target: 0.85
+    warning_threshold: 0.75
+    critical_threshold: 0.65
+    grain: [plant, line, machine, date]
+
+  - name: cost_per_unit
+    description: Total cost divided by good units produced.
+    formula: total_cost / good_units
+    unit: currency
+    higher_is_better: false
+    target: 4.50
+    warning_threshold: 5.00
+    critical_threshold: 5.75
+    grain: [plant, line, machine, date]
+
+  - name: yield
+    description: Good units divided by units started (first pass yield).
+    formula: good_units / started_units
+    unit: ratio
+    higher_is_better: true
+    target: 0.95
+    warning_threshold: 0.92
+    critical_threshold: 0.88
+    grain: [plant, line, machine, date]
+
+  - name: defect_rate
+    description: Fraction of produced units that are defective.
+    formula: defect_units / units_produced
+    unit: ratio
+    higher_is_better: false
+    target: 0.02
+    warning_threshold: 0.04
+    critical_threshold: 0.06
+    grain: [plant, line, machine, date]
+
+  - name: downtime_minutes
+    description: Total unplanned downtime in minutes.
+    formula: down_time_min
+    unit: minutes
+    higher_is_better: false
+    target: 30
+    warning_threshold: 60
+    critical_threshold: 120
+    grain: [plant, line, machine, date]

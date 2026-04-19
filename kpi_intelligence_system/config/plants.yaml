@@ -1,0 +1,79 @@
+# Multi-site configuration. Used by the sample data generator and the dashboard.
+plants:
+  - id: PLT01
+    name: Karachi North
+    region: South Asia
+    lines: [L1, L2, L3]
+    machines_per_line: 3
+    cost_factor: 1.00
+    oee_bias: 0.00
+  - id: PLT02
+    name: Lahore Central
+    region: South Asia
+    lines: [L1, L2]
+    machines_per_line: 4
+    cost_factor: 0.95
+    oee_bias: 0.03
+  - id: PLT03
+    name: Dubai Logistics
+    region: Middle East
+    lines: [L1, L2, L3]
+    machines_per_line: 2
+    cost_factor: 1.15
+    oee_bias: -0.02
+  - id: PLT04
+    name: Riyadh Assembly
+    region: Middle East
+    lines: [L1, L2, L3, L4]
+    machines_per_line: 2
+    cost_factor: 1.10
+    oee_bias: 0.01
+  - id: PLT05
+    name: Istanbul Works
+    region: Europe
+    lines: [L1, L2]
+    machines_per_line: 3
+    cost_factor: 1.05
+    oee_bias: 0.02
+  - id: PLT06
+    name: Berlin Precision
+    region: Europe
+    lines: [L1, L2, L3]
+    machines_per_line: 3
+    cost_factor: 1.25
+    oee_bias: 0.06
+  - id: PLT07
+    name: Chennai South
+    region: South Asia
+    lines: [L1, L2, L3]
+    machines_per_line: 3
+    cost_factor: 0.85
+    oee_bias: -0.03
+  - id: PLT08
+    name: Bangkok Electronics
+    region: Southeast Asia
+    lines: [L1, L2]
+    machines_per_line: 4
+    cost_factor: 0.90
+    oee_bias: 0.00
+  - id: PLT09
+    name: Mexico City Forge
+    region: Americas
+    lines: [L1, L2, L3]
+    machines_per_line: 3
+    cost_factor: 1.00
+    oee_bias: -0.04
+  - id: PLT10
+    name: Sao Paulo Plant
+    region: Americas
+    lines: [L1, L2]
+    machines_per_line: 3
+    cost_factor: 1.02
+    oee_bias: 0.00
+  - id: PLT11
+    name: Johannesburg Mill
+    region: Africa
+    lines: [L1, L2]
+    machines_per_line: 3
+    cost_factor: 1.05
+    oee_bias: -0.05
