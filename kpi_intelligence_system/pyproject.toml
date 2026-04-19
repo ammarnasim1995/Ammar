@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kpi_system"
+version = "0.1.0"
+description = "Performance Management & KPI Intelligence System for multi-site manufacturing"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "KPI Intelligence Team" }]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
