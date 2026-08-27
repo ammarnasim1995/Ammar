@@ -1,8 +1,9 @@
 import { h, badge } from '../dom.js';
-import { agingLegend, agingStack, meter, trendChart } from '../charts.js';
-import { AGING_BUCKETS, pct } from '../rules.js';
+import { agingLegend, agingStack, meter, monthValueChart, trendChart } from '../charts.js';
+import { fmtMoney, pct } from '../rules.js';
 import {
-  actionQueue, agentStats, agingMatrix, kpiSet, openLine, regionStats, setState, state, trendSeries,
+  actionQueue, agentStats, agingBuckets, agingMatrix, blockedByWindow, isLive, kpiSet, openLine,
+  regionStats, setState, state, trendSeries,
 } from '../store.js';
 
 const TONE_INK = { green: 'var(--good)', amber: 'var(--warn)', red: 'var(--crit)', blue: 'var(--accent-ink)' };
@@ -21,15 +22,61 @@ function kpi({ label, value, share, sub, tone, total }) {
 function kpiRow() {
   const k = kpiSet();
   const n = k.n;
+  const live = isLive();
   return h('div.grid-kpi', null,
     kpi({ label: 'Total shipment lines', value: n, share: '100%', sub: 'PK + BD + SL normalised', tone: 'blue', total: n }),
     kpi({ label: 'Agent details received', value: k.agentRecv, share: pct(k.agentRecv, n), sub: `${k.agentPend} lines incomplete or pending`, tone: 'green', total: n }),
-    kpi({ label: 'CRO received', value: k.croRecv, share: pct(k.croRecv, n), sub: `incl. ${k.released} released`, tone: 'green', total: n }),
+    kpi({
+      label: 'CRO received', value: k.croRecv, share: pct(k.croRecv, n),
+      sub: live ? 'container release / liner permit on file' : `incl. ${k.released} released`,
+      tone: 'green', total: n,
+    }),
     kpi({ label: 'Ready for release', value: k.ready, share: pct(k.ready, n), sub: 'agent details + CRO both confirmed', tone: 'green', total: n }),
-    kpi({ label: 'CRO pending', value: k.croPend, share: pct(k.croPend, n), sub: 'no valid CRO evidence in mailbox', tone: 'amber', total: n }),
-    kpi({ label: 'Agent details pending', value: k.agentPend, share: pct(k.agentPend, n), sub: `${k.partial} partial · ${k.none} none`, tone: 'amber', total: n }),
+    kpi({
+      label: 'CRO pending', value: k.croPend, share: pct(k.croPend, n),
+      sub: live ? 'no release order recorded against the line' : 'no valid CRO evidence in mailbox',
+      tone: 'amber', total: n,
+    }),
+    kpi({
+      label: 'Agent details pending', value: k.agentPend, share: pct(k.agentPend, n),
+      sub: live ? 'forwarder has not returned the details' : `${k.partial} partial · ${k.none} none`,
+      tone: 'amber', total: n,
+    }),
     kpi({ label: 'Action required', value: k.action, share: pct(k.action, n), sub: 'both sides incomplete', tone: 'red', total: n }),
-    kpi({ label: 'Overdue', value: k.overdue, share: pct(k.overdue, n), sub: `pending more than ${state.settings.criticalDays} days`, tone: 'red', total: n }));
+    live
+      ? kpi({
+        label: 'Past confirmed delivery', value: k.lateLines, share: pct(k.lateLines, n),
+        sub: 'delivery date passed, still not releasable', tone: 'red', total: n,
+      })
+      : kpi({
+        label: 'Overdue', value: k.overdue, share: pct(k.overdue, n),
+        sub: `pending more than ${state.settings.criticalDays} days`, tone: 'red', total: n,
+      }));
+}
+
+/** Value at stake — only meaningful once real order values are loaded. */
+function valueRow() {
+  const k = kpiSet();
+  return h('div.grid-3', null,
+    h('div.kpi', null,
+      h('div.label', null, 'Balance to ship'),
+      h('div.kpi-val', null, h('span.n.num', null, fmtMoney(k.valueTotal))),
+      meter(100, 'var(--accent)'),
+      h('div.kpi-sub', null, `${k.n.toLocaleString()} open lines in this filter`)),
+    h('div.kpi', null,
+      h('div.label', null, 'Blocked value'),
+      h('div.kpi-val', null,
+        h('span.n.num', null, fmtMoney(k.valueBlocked)),
+        h('span.pct.num', { style: 'color:var(--warn)' }, pct(k.valueBlocked, k.valueTotal))),
+      meter(k.valueTotal ? (k.valueBlocked / k.valueTotal) * 100 : 0, 'var(--warn)'),
+      h('div.kpi-sub', null, 'agent details or CRO still outstanding')),
+    h('div.kpi', null,
+      h('div.label', null, 'Past confirmed delivery'),
+      h('div.kpi-val', null,
+        h('span.n.num', null, fmtMoney(k.valueLate)),
+        h('span.pct.num', { style: 'color:var(--crit)' }, `${k.lateLines} lines`)),
+      meter(k.valueTotal ? (k.valueLate / k.valueTotal) * 100 : 0, 'var(--crit)'),
+      h('div.kpi-sub', null, 'delivery date passed, still not releasable')));
 }
 
 function regionCards() {
@@ -48,11 +95,18 @@ function regionCards() {
       h('div.region-rows', null,
         h('div', null, h('span', null, 'Agent details'), h('span.num', null, s.agentPct)),
         h('div', null, h('span', null, 'CRO received'), h('span.num', null, s.croPct)),
-        h('div', null, h('span', null, 'Overdue'),
+        h('div', null, h('span', null, isLive() ? 'Past delivery date' : 'Overdue'),
           h('span.num', { style: s.overdue > 25 ? 'color:var(--crit)' : '' }, String(s.overdue)))))))));
 }
 
 function trendCard() {
+  if (isLive()) {
+    return h('div.card', null,
+      h('div.card-head', null,
+        h('h2', null, 'Balance to ship by delivery window'),
+        h('span.card-hint', null, 'how much is blocked, and how soon it is due')),
+      h('div.card-body', null, monthValueChart(blockedByWindow(), fmtMoney)));
+  }
   return h('div.card', null,
     h('div.card-head', null,
       h('h2', null, '14-day trend'),
@@ -63,11 +117,13 @@ function trendCard() {
 function agentPendingCard() {
   const rows = agentStats().slice(0, 6);
   return h('div.card', null,
-    h('div.card-head', null, h('h2', null, 'CRO pending by agent'), h('span.card-hint', null, 'ranked by pending lines')),
+    h('div.card-head', null,
+      h('h2', null, isLive() ? 'CRO pending by owner' : 'CRO pending by agent'),
+      h('span.card-hint', null, 'ranked by pending lines')),
     h('div.table-wrap', null,
       h('table', null,
         h('thead', null, h('tr', null,
-          h('th', null, 'Agent'),
+          h('th', null, isLive() ? 'Owner (AAM)' : 'Agent'),
           h('th.right', null, 'Lines'),
           h('th.right', null, 'Avg aging'),
           h('th.right', null, 'Critical'))),
@@ -116,12 +172,13 @@ function agingCard() {
       matrix.map((row) => h('div.aging-row', null,
         h('span', { style: 'font-size:12px; font-weight:500' }, row.name),
         agingStack(row, () => setState({ view: 'monitor', region: row.name.slice(0, 2), quick: 'CRO Pending', page: 1 })))),
-      agingLegend(AGING_BUCKETS.map(([label, , , fill]) => ({ label, fill })))));
+      agingLegend(agingBuckets().map(([label, , , fill]) => ({ label, fill })))));
 }
 
 export function dashboardView() {
   return h('div', { style: 'display:flex; flex-direction:column; gap:18px' },
     kpiRow(),
+    isLive() ? valueRow() : null,
     h('div.grid-2', null, regionCards(), trendCard()),
     h('div.grid-split', null, agentPendingCard(), actionCard()),
     agingCard());

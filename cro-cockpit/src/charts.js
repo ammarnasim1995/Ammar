@@ -132,6 +132,47 @@ export function agingLegend(buckets) {
     h('i', { style: `background:${b.fill}` }), b.label)));
 }
 
+/**
+ * Blocked vs releasable balance by plan month. Same unit on one axis, so the
+ * two parts stack honestly into the month's total.
+ */
+export function monthValueChart(rows, fmtMoney) {
+  const max = Math.max(1, ...rows.map((r) => r.blocked + r.ready));
+  const tip = h('div.chart-tip');
+  const bars = rows.map((r) => {
+    const total = r.blocked + r.ready;
+    const show = (e) => {
+      tip.replaceChildren(
+        h('div.tip-title', null, r.month),
+        h('div.tip-row', null, h('span', null, h('i', { style: 'background:var(--s-pending)' }), ' Blocked'), h('span.num', null, fmtMoney(r.blocked))),
+        h('div.tip-row', null, h('span', null, h('i', { style: 'background:var(--s-received)' }), ' Releasable'), h('span.num', null, fmtMoney(r.ready))),
+        h('div.tip-row', null, h('span', null, 'Lines'), h('span.num', null, String(r.lines))),
+      );
+      tip.dataset.show = '1';
+      const host = e.currentTarget.closest('.chart-holder').getBoundingClientRect();
+      const cell = e.currentTarget.getBoundingClientRect();
+      tip.style.left = `${cell.left - host.left + cell.width / 2}px`;
+      tip.style.top = '0px';
+      tip.style.transform = 'translate(-50%, -100%)';
+    };
+    return h('div', {
+      style: 'flex:1; max-width:120px; display:flex; flex-direction:column; justify-content:flex-end; gap:3px; height:100%; min-width:0',
+      onmouseenter: show,
+      onmouseleave: () => { tip.dataset.show = '0'; },
+    },
+    h('div', { style: `height:${(r.blocked / max) * 100}%; background:var(--s-pending); border-radius:3px 3px 0 0` }),
+    h('div', { style: `height:${(r.ready / max) * 100}%; background:var(--s-received); border-radius:0 0 3px 3px` }),
+    h('div.axis-label.num', { style: 'font-size:9.5px; color:var(--ink-3); text-align:center; white-space:nowrap; overflow:hidden' }, r.month));
+  });
+
+  return h('div.chart-holder', null,
+    h('div', { style: 'display:flex; align-items:flex-end; gap:6px; height:168px' }, bars),
+    tip,
+    h('div.legend', { style: 'margin-top:8px' },
+      h('span.key', null, h('i', { style: 'background:var(--s-pending)' }), 'Blocked — agent details or CRO outstanding'),
+      h('span.key', null, h('i', { style: 'background:var(--s-received)' }), 'Releasable')));
+}
+
 /** Horizontal proportion bar used inside region and KPI cards. */
 export function meter(percent, color) {
   return h('div.bar', null, h('i', { style: `width:${Math.max(0, Math.min(100, percent))}%; background:${color}` }));

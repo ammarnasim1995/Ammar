@@ -8,6 +8,7 @@
  */
 
 import { buildDataset, processMailbox } from './data.js';
+import { datasetToDb, loadDataset } from './live.js';
 import {
   AGING_BUCKETS, DEFAULT_SETTINGS, REGIONS, SETTINGS_BOUNDS,
   isCroPending, isCroReceived, isReleasable, pct, priorityLabel, priorityScore, recompute,
@@ -20,7 +21,7 @@ export const VIEWS = {
   monitor: ['Shipment monitor', 'Every shipment line with its agent-details and CRO evidence'],
   cro: ['CRO pending', 'Lines with no valid Container Release Order evidence'],
   agent: ['Agent details', 'Lines where required agent fields are missing or incomplete'],
-  agentperf: ['Agent performance', 'Forwarder-wise CRO turnaround and pending exposure'],
+  agentperf: ['Owner performance', 'Account-manager-wise CRO turnaround and pending exposure'],
   regionperf: ['Region performance', 'PK / BD / SL comparison and aging distribution'],
   emails: ['Emails', 'Parsed logistics emails and the fields extracted from each'],
   review: ['Match review queue', 'Matches the parser could not confirm on its own'],
@@ -94,6 +95,26 @@ export function setState(patch, { silent = false } = {}) {
 }
 
 export const getDb = () => db;
+
+/** True once real tracker data is loaded; false for the demo dataset. */
+export const isLive = () => db.live === true;
+
+/** Views that only make sense with a mailbox connected. */
+const MAILBOX_VIEWS = new Set(['emails', 'review', 'exceptions']);
+export const availableViews = () => Object.keys(VIEWS)
+  .filter((v) => !(isLive() && MAILBOX_VIEWS.has(v)));
+
+/**
+ * Swap in the real trackers if a dataset is present. Falls back silently to
+ * the demo dataset, so the page works with or without one.
+ */
+export async function initData() {
+  const payload = await loadDataset();
+  if (!payload || !Array.isArray(payload.lines) || !payload.lines.length) return false;
+  db = datasetToDb(payload, state.settings);
+  if (MAILBOX_VIEWS.has(state.view)) state.view = 'dashboard';
+  return true;
+}
 
 /* ------------------------------------------------------------- settings -- */
 
@@ -224,8 +245,15 @@ export function kpiSet() {
   const overdue = count((l) => l.overdue);
   const review = count((l) => l.overall === 'REVIEW REQUIRED');
 
+  const value = (f) => all.filter(f).reduce((sum, l) => sum + (l.balToShip || 0), 0);
+
   return {
     n, agentRecv, croRecv, croPend, ready, action, overdue, review,
+    valueTotal: value(() => true),
+    valueReady: value(isReleasableLine),
+    valueBlocked: value((l) => !isReleasable(l.overall)),
+    valueLate: value((l) => l.daysToDelivery < 0 && !isReleasable(l.overall)),
+    lateLines: count((l) => l.daysToDelivery < 0 && !isReleasable(l.overall)),
     agentPend: n - agentRecv,
     released: count((l) => l.croStatus === 'CRO Released'),
     partial: count((l) => l.agentStatus === 'Partially Received'),
@@ -296,13 +324,50 @@ export function trendSeries() {
   });
 }
 
+/** Real trackers age in months, not days, so the buckets widen in live mode. */
+export const agingBuckets = () => (isLive()
+  ? [
+    ['0\u20137 d', 0, 7, 'var(--age-1)', 'var(--age-ink-1)'],
+    ['8\u201314 d', 8, 14, 'var(--age-2)', 'var(--age-ink-1)'],
+    ['15\u201330 d', 15, 30, 'var(--age-3)', 'var(--age-ink-5)'],
+    ['31\u201360 d', 31, 60, 'var(--age-4)', 'var(--age-ink-5)'],
+    ['> 60 d', 61, 99999, 'var(--age-5)', 'var(--age-ink-5)'],
+  ]
+  : AGING_BUCKETS);
+
+/**
+ * Balance to ship by how soon it is due — the release-pressure curve. Split
+ * into what is blocked and what could ship today, so the bar that matters
+ * (past due, still blocked) reads first.
+ */
+const DELIVERY_WINDOWS = [
+  ['Past due', -1e9, -1],
+  ['0\u20137 d', 0, 7],
+  ['8\u201314 d', 8, 14],
+  ['15\u201330 d', 15, 30],
+  ['> 30 d', 31, 1e9],
+];
+
+export function blockedByWindow() {
+  const rows = DELIVERY_WINDOWS.map(([month, lo, hi]) => ({ month, lo, hi, blocked: 0, ready: 0, lines: 0 }));
+  filteredLines().forEach((l) => {
+    const d = l.daysToDelivery ?? 0;
+    const row = rows.find((r) => d >= r.lo && d <= r.hi);
+    if (!row) return;
+    row.lines++;
+    if (isReleasable(l.overall)) row.ready += l.balToShip || 0;
+    else row.blocked += l.balToShip || 0;
+  });
+  return rows;
+}
+
 export function agingMatrix() {
   return regionStats().map((s) => {
     const waiting = s.ls.filter((l) => isCroPending(l.croStatus) || l.agentStatus !== 'Received');
     return {
       name: s.name,
       total: waiting.length,
-      buckets: AGING_BUCKETS.map(([label, lo, hi, fill, ink]) => {
+      buckets: agingBuckets().map(([label, lo, hi, fill, ink]) => {
         const count = waiting.filter((l) => l.aging >= lo && l.aging <= hi).length;
         return { label, count, fill, ink, share: waiting.length ? (count / waiting.length) * 100 : 0 };
       }),

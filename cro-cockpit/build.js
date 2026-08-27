@@ -20,6 +20,7 @@ const MODULES = [
   'src/dom.js',
   'src/charts.js',
   'src/data.js',
+  'src/live.js',
   'src/store.js',
   'src/views/dashboard.js',
   'src/views/table.js',

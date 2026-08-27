@@ -6,9 +6,9 @@
 import { download, h, mount, toast } from './dom.js';
 import { REGIONS } from './rules.js';
 import {
-  QUICK_LABELS, VIEWS, applyTheme, checkMailbox, closeDrawer, exceptionEmails, exportCsv,
-  filteredLines, getDb, kpiSet, openEmail, readHash, render, reviewLines, setState, state,
-  subscribe, toggleAuto,
+  QUICK_LABELS, VIEWS, applyTheme, availableViews, checkMailbox, closeDrawer, exceptionEmails,
+  exportCsv, filteredLines, getDb, initData, isLive, kpiSet, openEmail, readHash, render,
+  reviewLines, setState, state, subscribe, toggleAuto,
 } from './store.js';
 import { dashboardView } from './views/dashboard.js';
 import { tableView } from './views/table.js';
@@ -27,7 +27,7 @@ const NAV = [
   ['review', 'Match review'],
   ['exceptions', 'Exceptions'],
   ['emails', 'Emails'],
-  ['agentperf', 'Agent performance'],
+  ['agentperf', 'Owner performance'],
   ['regionperf', 'Region performance'],
   ['settings', 'Settings'],
 ];
@@ -46,25 +46,33 @@ function navCounts() {
 
 function rail() {
   const counts = navCounts();
+  const allowed = new Set(availableViews());
   return h('nav.rail', { 'aria-label': 'Views' },
     h('div.rail-head', null,
       h('div.rail-org', null, 'Midas Safety · SCM'),
       h('div.rail-title', null, 'CRO & Agent Details', h('br'), 'Approval Cockpit')),
-    h('div.rail-nav', null, NAV.map(([id, label]) => h('button.rail-item', {
+    h('div.rail-nav', null, NAV.filter(([id]) => allowed.has(id)).map(([id, label]) => h('button.rail-item', {
       'aria-current': state.view === id ? 'page' : null,
       onclick: () => setState({ view: id, page: 1 }),
     }, h('span', null, label), h('span.rail-count.num', null, counts[id] != null ? String(counts[id]) : '')))),
     h('div.rail-foot', null,
       h('div.label', null, 'Data sources'),
       h('div.rail-sources.num', null,
-        h('span', null, 'PK · Shipment Tracker'),
-        h('span', null, 'BD · Shipment Tracker'),
-        h('span', null, 'SL · Shipment Tracker'),
-        h('span', null, 'logistics@midassafety.com'))));
+        isLive()
+          ? getDb().sources.map((s) => h('span', null, `${s.region} · ${s.rows.toLocaleString()} lines`))
+          : [
+            h('span', null, 'PK · Shipment Tracker'),
+            h('span', null, 'BD · Shipment Tracker'),
+            h('span', null, 'SL · Shipment Tracker'),
+          ],
+        h('span', null, isLive() ? `extract ${getDb().asOf}` : 'logistics@midassafety.com'))));
 }
 
 function topbar() {
-  const [title, subtitle] = VIEWS[state.view];
+  const [title, rawSubtitle] = VIEWS[state.view];
+  const subtitle = isLive() && state.view === 'dashboard'
+    ? `Reconciled across the PK, BD and SL shipment trackers · extract ${getDb().asOf}`
+    : rawSubtitle;
   return h('header.topbar', null,
     h('div.topbar-titles', null, h('h1', null, title), h('span.topbar-sub', null, subtitle)),
     h('div.search', null,
@@ -73,23 +81,31 @@ function topbar() {
         value: state.q,
         'data-focus-key': 'search',
         'aria-label': 'Search shipments, orders, customers, containers, CRO numbers, agents and email subjects',
-        placeholder: 'Search shipment, order, customer, container, CRO, agent, email subject…',
+        placeholder: isLive()
+          ? 'Search sales order, customer, destination, owner, plant…'
+          : 'Search shipment, order, customer, container, CRO, agent, email subject…',
         oninput: (e) => setState({ q: e.target.value, page: 1 }),
       }),
       h('kbd', null, '/')),
-    h('div.topbar-right', null,
-      h('div.sync-stamp', null,
-        h('span.label', null, 'Last sync'),
-        h('span.val.num', null, state.lastSync)),
-      h('button.btn', {
-        'aria-pressed': String(state.auto),
-        onclick: toggleAuto,
-      }, h('span', { class: `dot${state.auto ? ' on' : ''}` }),
-      state.auto ? `Auto-check on · every ${state.settings.autoCheckSeconds}s` : 'Auto-check off'),
-      h('button.btn.btn-primary', {
-        onclick: checkMailbox,
-        disabled: state.syncing,
-      }, state.syncing ? 'Checking mailbox…' : 'Check mailbox')));
+    isLive()
+      ? h('div.topbar-right', null,
+        h('div.sync-stamp', null,
+          h('span.label', null, 'Tracker extract'),
+          h('span.val.num', null, getDb().asOf)),
+        h('span.badge.badge-green', null, 'LIVE DATA'))
+      : h('div.topbar-right', null,
+        h('div.sync-stamp', null,
+          h('span.label', null, 'Last sync'),
+          h('span.val.num', null, state.lastSync)),
+        h('button.btn', {
+          'aria-pressed': String(state.auto),
+          onclick: toggleAuto,
+        }, h('span', { class: `dot${state.auto ? ' on' : ''}` }),
+        state.auto ? `Auto-check on · every ${state.settings.autoCheckSeconds}s` : 'Auto-check off'),
+        h('button.btn.btn-primary', {
+          onclick: checkMailbox,
+          disabled: state.syncing,
+        }, state.syncing ? 'Checking mailbox…' : 'Check mailbox')));
 }
 
 function syncBanner() {
@@ -151,8 +167,10 @@ function filters() {
     )),
     h('div.filters-right', null,
       h('span.filter-count.num', null,
-        `${shown.toLocaleString()} of ${db.lines.length.toLocaleString()} lines · `
-        + `${db.emails.length} emails parsed · ${unparsed} unparsed`),
+        isLive()
+          ? `${shown.toLocaleString()} of ${db.lines.length.toLocaleString()} lines · extract ${db.asOf}`
+          : `${shown.toLocaleString()} of ${db.lines.length.toLocaleString()} lines · `
+            + `${db.emails.length} emails parsed · ${unparsed} unparsed`),
       h('button.btn', {
         onclick: () => {
           const { csv, count } = exportCsv();
@@ -199,11 +217,12 @@ function keyboard(e) {
   }
 }
 
-export function start(root) {
+export async function start(root) {
   readHash();
   applyTheme();
   subscribe(() => mount(root, shell()));
   window.addEventListener('hashchange', () => { readHash(); render(); });
   window.addEventListener('keydown', keyboard);
   render();
+  if (await initData()) render();
 }
