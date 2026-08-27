@@ -1,7 +1,7 @@
 import { h, badge } from '../dom.js';
 import { agingLegend, agingStack, meter } from '../charts.js';
-import { AGING_BUCKETS, pct } from '../rules.js';
-import { agentStats, agingMatrix, regionStats, setState, state } from '../store.js';
+import { pct } from '../rules.js';
+import { agentStats, agingBuckets, agingMatrix, isLive, regionStats, setState, state } from '../store.js';
 
 export function agentPerfView() {
   const rows = agentStats();
@@ -13,12 +13,14 @@ export function agentPerfView() {
 
   return h('div.card', null,
     h('div.card-head', null,
-      h('h2', null, 'Agent / forwarder performance'),
-      h('span.card-hint', null, 'ranked by CRO pending, then aging · reflects the active filters')),
+      h('h2', null, isLive() ? 'Owner (AAM) performance' : 'Agent / forwarder performance'),
+      h('span.card-hint', null, isLive()
+        ? 'ranked by CRO pending, then aging · the trackers carry no forwarder, so lines are ranked by their area account manager'
+        : 'ranked by CRO pending, then aging · reflects the active filters')),
     h('div.table-wrap', null,
       h('table', null,
         h('thead', null, h('tr', null,
-          h('th', null, 'Agent'), h('th', null, 'Region'), h('th.right', null, 'Total'),
+          h('th', null, isLive() ? 'Owner (AAM)' : 'Agent'), h('th', null, 'Source'), h('th.right', null, 'Total'),
           h('th.right', null, 'Agent details'), h('th.right', null, 'CRO received'),
           h('th.right', null, 'CRO pending'), h('th.right', null, 'Ready'),
           h('th.right', null, 'Avg aging'), h('th.right', null, 'Overdue'), h('th', null, 'Rating'))),
@@ -85,5 +87,5 @@ export function regionPerfView() {
         matrix.map((row) => h('div.aging-row', null,
           h('span', { style: 'font-size:12px; font-weight:500' }, `${row.name} (${row.total})`),
           agingStack(row, () => setState({ view: 'monitor', region: row.name.slice(0, 2), quick: 'CRO Pending', page: 1 })))),
-        agingLegend(AGING_BUCKETS.map(([label, , , fill]) => ({ label, fill }))))));
+        agingLegend(agingBuckets().map(([label, , , fill]) => ({ label, fill }))))));
 }

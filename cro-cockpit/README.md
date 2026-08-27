@@ -45,6 +45,32 @@ match was made, the line's history, and the source email body.
 
 ![Shipment line drawer](docs/drawer.png)
 
+## Running it on the real trackers
+
+The app ships with a seeded demo dataset so it works out of the box. Point it at
+the real regional trackers and it switches to live mode:
+
+```bash
+python3 tools/import_trackers.py \
+    Shipment_TrackerPKREGION.xlsx Shipment_TrackerMSBD.xlsx Shipment_TrackerSLREGION.xlsx \
+    -o src/dataset.json
+npm run dev
+```
+
+The importer reads each workbook's regional sheet (header on row 4), normalises
+it, and prints everything it had to correct — the cleanup is reported, never
+silent. In live mode the mailbox views (Emails, Match review, Exceptions) are
+hidden, since no mailbox is connected, and the dashboard gains the value of what
+is blocked.
+
+Two things the trackers do not carry, and the app does not pretend otherwise:
+there is no forwarder column, so lines are ranked by their **area account
+manager**; and "overdue" means the **confirmed delivery date has passed**, not a
+desk-aging rule — with real data every line ages in months.
+
+> `src/dataset.json` is gitignored. It contains customer names, prices and order
+> values, and **this repository is public.** Keep extracts out of it.
+
 ## Business rules
 
 Encoded in one place, `src/rules.js`, and tunable at runtime from Settings:
