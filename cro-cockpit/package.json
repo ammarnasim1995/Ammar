@@ -1,0 +1,15 @@
+{
+  "name": "cro-approval-cockpit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CRO & Agent Details approval cockpit — reconciles the PK/BD/SL shipment trackers against the logistics mailbox.",
+  "scripts": {
+    "dev": "npx --yes http-server . -p 4173 -c-1 -o",
+    "build": "node build.js",
+    "test": "node build.js && node test/ui.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
