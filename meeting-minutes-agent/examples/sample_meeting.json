@@ -1,0 +1,34 @@
+{
+  "key": "zoom-sample-planning-review",
+  "platform": "zoom",
+  "meeting_id": "sample-planning-review",
+  "subject": "Weekly S&OP review - Line 3 backlog",
+  "organizer": "hostid-001",
+  "started_at": "2026-08-25T09:00:00+00:00",
+  "ended_at": "2026-08-25T09:24:00+00:00",
+  "participants": [
+    {"display_name": "Ammar Nasim", "joined_at": "2026-08-25T09:00:00+00:00"},
+    {"display_name": "Priya Raman", "joined_at": "2026-08-25T09:00:30+00:00"},
+    {"display_name": "Tom Becker", "joined_at": "2026-08-25T09:01:10+00:00"},
+    {"display_name": "Lena Fischer", "joined_at": "2026-08-25T09:02:00+00:00"}
+  ],
+  "utterances": [
+    {"channel": "speech", "speaker": "Ammar Nasim", "text": "Let's start with the Line 3 backlog. We closed the week at 42,000 pairs against a plan of 55,000.", "at": "2026-08-25T09:01:20+00:00", "external_id": "s1"},
+    {"channel": "speech", "speaker": "Priya Raman", "text": "The gap is almost entirely the nitrile dip line. We lost eleven hours to the curing oven fault on Tuesday and Wednesday.", "at": "2026-08-25T09:02:05+00:00", "external_id": "s2"},
+    {"channel": "chat", "speaker": "Tom Becker", "text": "OEE for the week: 61.4% on Line 3 vs 78% target. Downtime pareto attached in the channel.", "at": "2026-08-25T09:02:40+00:00", "external_id": "c1"},
+    {"channel": "speech", "speaker": "Tom Becker", "text": "Maintenance replaced the thermocouple Thursday morning. It has run clean since, but we have not requalified the oven profile.", "at": "2026-08-25T09:03:30+00:00", "external_id": "s3"},
+    {"channel": "speech", "speaker": "Lena Fischer", "text": "From the customer side, the Aldi order for week 36 is the exposed one. They will not accept a split shipment this time.", "at": "2026-08-25T09:05:10+00:00", "external_id": "s4"},
+    {"channel": "chat", "speaker": "Lena Fischer", "text": "Aldi PO 88213 - 18,000 pairs, must ship complete by 4 Sept.", "at": "2026-08-25T09:05:35+00:00", "external_id": "c2"},
+    {"channel": "speech", "speaker": "Ammar Nasim", "text": "Then we protect Aldi first. Priya, can Line 5 take the overflow if we move the industrial glove run out a week?", "at": "2026-08-25T09:06:20+00:00", "external_id": "s5"},
+    {"channel": "speech", "speaker": "Priya Raman", "text": "Line 5 can take about 9,000 pairs of it. Beyond that we run into the liner supply, we only have stock through the ninth.", "at": "2026-08-25T09:07:00+00:00", "external_id": "s6"},
+    {"channel": "speech", "speaker": "Ammar Nasim", "text": "Alright, decision: we move the industrial glove run to week 37 and put 9,000 pairs of the Aldi order on Line 5. Lena, confirm the ship date with the customer today.", "at": "2026-08-25T09:08:45+00:00", "external_id": "s7"},
+    {"channel": "chat", "speaker": "Priya Raman", "text": "Noted. I'll re-cut the schedule and share the revised plan by tomorrow morning.", "at": "2026-08-25T09:09:10+00:00", "external_id": "c3"},
+    {"channel": "speech", "speaker": "Tom Becker", "text": "I will get the oven requalification done Saturday during the planned stop, so we are not guessing on Monday.", "at": "2026-08-25T09:10:30+00:00", "external_id": "s8"},
+    {"channel": "speech", "speaker": "Lena Fischer", "text": "One open point - if liner supply slips again in September, do we hold or partial-ship? We never settled that policy.", "at": "2026-08-25T09:12:00+00:00", "external_id": "s9"},
+    {"channel": "speech", "speaker": "Ammar Nasim", "text": "Leave that with me, I'll take it to the commercial review on Thursday.", "at": "2026-08-25T09:12:40+00:00", "external_id": "s10"},
+    {"channel": "chat", "speaker": "Tom Becker", "text": "Risk to flag: the second oven on Line 3 is on the same thermocouple batch. If it goes, we lose the line entirely.", "at": "2026-08-25T09:14:15+00:00", "external_id": "c4"},
+    {"channel": "speech", "speaker": "Priya Raman", "text": "Agreed, I'd rather change both now than wait for the second one to fail.", "at": "2026-08-25T09:15:00+00:00", "external_id": "s11"},
+    {"channel": "chat", "speaker": "Ammar Nasim", "text": "Tom - raise a CRO for the second thermocouple this week please.", "at": "2026-08-25T09:16:00+00:00", "external_id": "c5"},
+    {"channel": "speech", "speaker": "Ammar Nasim", "text": "Same time next week. Priya's revised plan and Tom's requalification result are the two things I want to see.", "at": "2026-08-25T09:22:30+00:00", "external_id": "s12"}
+  ]
+}
