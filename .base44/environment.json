@@ -1,0 +1,13 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "GEMINI_API_KEY",
+      "description": "Google Gemini API key for the AI patient assistant. Obtain from Google AI Studio (https://aistudio.google.com/apikey).",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": true
+    }
+  ]
+}
