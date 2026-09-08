@@ -41,7 +41,7 @@ export const DOCTORS: Doctor[] = [
     name: 'Dr. Syeda Maha Shafi',
     specialty: 'Family Medicine',
     image: 'https://picsum.photos/200/200?random=1',
-    availability: ['Mon', 'Tue', 'Wed', 'Thu' 'Fri', 'Sat']
+    availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   },
   {
     id: 'd2',
