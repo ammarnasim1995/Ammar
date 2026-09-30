@@ -1,6 +1,6 @@
 import { h, badge } from '../dom.js';
-import { statusTone } from '../rules.js';
-import { openLine, pageOf, setState, state, toggleSort, viewRows } from '../store.js';
+import { fmtMoney, statusTone } from '../rules.js';
+import { isLive, openLine, pageOf, setState, state, toggleSort, viewRows } from '../store.js';
 
 /** key: the sort key (null = not sortable); cls: extra cell classes. */
 const COLUMNS = [
@@ -39,6 +39,34 @@ const COLUMNS = [
   { key: null, label: 'Source', cls: 'num link', cell: (l) => l.emailId || 'no email' },
 ];
 
+/** With real trackers loaded there are no mailbox columns, but there is money. */
+const LIVE_COLUMNS = [
+  { key: 'region', label: 'Source', cell: (l) => badge(l.region, 'grey') },
+  { key: null, label: 'Plant', cls: 'num', cell: (l) => l.plant },
+  { key: 'customer', label: 'Customer', cls: 'wide', cell: (l) => l.customer },
+  { key: null, label: 'Sales region', cell: (l) => l.salesRegion || '—' },
+  { key: 'salesOrder', label: 'Sales order', cls: 'num', cell: (l) => l.salesOrder },
+  { key: null, label: 'Item', cls: 'num', cell: (l) => l.lineItem },
+  { key: null, label: 'Plan month', cls: 'num', cell: (l) => l.planMonth || '—' },
+  { key: 'destination', label: 'Destination', cell: (l) => l.destination || '—' },
+  { key: 'agent', label: 'Owner (AAM)', cls: 'wide', cell: (l) => l.agent },
+  { key: 'confirmed', label: 'Conf. delivery', cls: 'num', cell: (l) => l.confirmed },
+  {
+    key: null, label: 'Days to del.', right: true, cls: 'num',
+    cell: (l) => (l.daysToDelivery < 0 ? `${Math.abs(l.daysToDelivery)} late` : String(l.daysToDelivery)),
+    tone: (l) => (l.daysToDelivery < 0 ? 'crit' : ''),
+  },
+  { key: 'agentStatus', label: 'Agent details', cell: (l) => badge(l.agentStatus, statusTone(l.agentStatus)) },
+  { key: null, label: 'Booking', cell: (l) => badge(l.bookingStatus, statusTone(l.bookingStatus)) },
+  { key: 'croStatus', label: 'CRO / LP', cell: (l) => badge(l.croStatus, statusTone(l.croStatus)) },
+  { key: 'aging', label: 'Aging', right: true, cls: 'num', cell: (l) => `${l.aging} d`, tone: (l) => (l.overdue ? 'crit' : '') },
+  { key: null, label: 'Rem. qty', right: true, cls: 'num', cell: (l) => l.remQty.toLocaleString() },
+  { key: null, label: 'Bal. to ship', right: true, cls: 'num', cell: (l) => fmtMoney(l.balToShip) },
+  { key: 'overall', label: 'Overall', cell: (l) => badge(l.overall, statusTone(l.overall)) },
+];
+
+const columns = () => (isLive() ? LIVE_COLUMNS : COLUMNS);
+
 function headerCell(col) {
   if (!col.key) return h('th', { class: col.right ? 'right' : '' }, col.label);
   const active = state.sort.key === col.key;
@@ -56,7 +84,7 @@ function bodyRow(line) {
     tabindex: 0,
     onclick: () => openLine(line.id),
     onkeydown: (e) => { if (e.key === 'Enter') openLine(line.id); },
-  }, COLUMNS.map((col) => {
+  }, columns().map((col) => {
     const classes = [col.cls, col.right ? 'right' : '', col.tone ? col.tone(line) : ''].filter(Boolean).join(' ');
     return h('td', { class: classes }, col.cell(line));
   }));
@@ -86,7 +114,7 @@ export function tableView(title) {
     rows.length
       ? h('div.table-wrap', { 'data-scroll': '' },
         h('table', null,
-          h('thead', null, h('tr', null, COLUMNS.map(headerCell))),
+          h('thead', null, h('tr', null, columns().map(headerCell))),
           h('tbody', null, paged.slice.map(bodyRow))))
       : h('div.empty', null,
         h('strong', null, 'No lines match'),

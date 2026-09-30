@@ -123,6 +123,14 @@ export function addDays(d, n) {
   return x;
 }
 
+/** Compact money for KPI tiles and table cells. */
+export function fmtMoney(v) {
+  const n = Number(v) || 0;
+  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  if (Math.abs(n) >= 1e3) return `$${Math.round(n / 1e3)}k`;
+  return `$${Math.round(n)}`;
+}
+
 export function pct(n, d) {
   return d ? `${Math.round((n / d) * 1000) / 10}%` : '—';
 }
